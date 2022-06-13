@@ -1,0 +1,21 @@
+This excerise for using ReFramework without Queue
+https://www.youtube.com/watch?v=W3u6TsFOQfA&t=1507s
+1:08:01
+
+
+1. Create ReFramework project
+2. Change type of 'TransactionItem' to be 'DataRow'
+3. Go to 'Get transaction data' stage --> open work flow 'GetTransactionData.xaml' and change data type of argument 'out_TransactionItem' to be 'DataRow'
+4. Go to 'Process Transaction' stage --> open work flow 'Process.xaml' and change to 'DataRow'
+5. open work flow 'SetTransactionStatus.xaml' and disable activities which related to Queue
+6. For invoke 'SetTransactionStatus.xaml' at import arguments --> Change value from 'Nothing' to be 'TransactionItem' at 'in_TransactionItem'
+7. Create folder 'System1' and 'SHA1Online' at root path
+8. Create sequence 'System1_Login' in 'System1'
+9. Go to github --> https://github.com/UiPath/ReFrameWork/blob/master/Framework/GetAppCredentials.xaml
+	and copy code and save as 'GetAppCredential.xaml' to folder 'Framework'
+10. Go to manage packages and install 'UiPath.Credentials.Activities'
+	*** After install if found missing activity --> Update to lower version to fix it ***
+11. Go to 'System1_Login' and invoke 'GetAppCredential' then map arguments
+12. Go to orchestrator and create asset name "ACME_Credential" --> to login into "https://acme-test.uipath.com/"
+13. Copy asset name "ACME_Credential" and fill into argument "System1_Credential"
+14. 

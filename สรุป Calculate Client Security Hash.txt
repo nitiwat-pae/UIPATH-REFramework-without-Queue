@@ -1,0 +1,270 @@
+************************ UNCLEAR PROCESS ***********************
+queueName กับ queueFolder ถูกตั้ง default เป็นค่าว่าง แล้วเอามาเช็ค ว่า Null ไหมเพื่ออะไร {
+4. Set Arguments <in_OrchestratorQueueName> and <in_OrchestratorQueueFolder> = Null
+5. Check If <in_OrchestratorQueueName> is Null or WhiteSpace
+		5.1 Assign Config("OrchestratorQueueName") = <in_OrchestratorQueueName>
+
+6. Check If <in_OrchestratorQueueFolder> is Null or WhiteSpace
+		6.1 Assign Config("OrchestratorQueueFolder") = <in_OrchestratorQueueFolder>
+}
+************************ UNCLEAR PROCESS ***********************
+
+
+
+****************  START Initialization
+1. SystemException = Nothing
+2. Config (Dict<string, object>) = Nothing
+3. Invoke "InitAllSettings"
+	------------ START InitAllSettings
+		Arguments IN :
+			1. in_ConfigFile = "Data\Config.xlsx" //default
+			2. in_ConfigSheets = {"Settings", "Constants"} //default
+		Process :
+			1. out_Config = New Dictionary
+			2. Get local config
+				2.1 For each "Sheet" in <in_ConfigSheets>
+					2.1.1 Read range and set output = <Dt_SettingsAndConstants>
+					2.1.2 For each "Row" in <Dt_SettingsAndConstants>
+						2.1.2.1 Assign out_Config(Row("Name")) = Row("Value")
+			3. Get cloud config (Orchestrator asset)
+				3.1 AssetValue = Nothing
+				3.2 Read range <in_ConfigFile> at sheet name "Assets" and set output = <dt_Assets>
+				3.3 For each "Row" in <dt_Assets>
+					3.3.1 Get orchestrator asset
+						- Asset name = row("Asset").Tostring
+						- Asset value = AssetValue
+					3.3.2 Assign out_Config(row("Name")) = AssetValue
+		Arguments OUT :
+			1. out_Config = <Config> //default
+	------------ END InitAllSettings
+
+4. Set Arguments <in_OrchestratorQueueName> and <in_OrchestratorQueueFolder> = Null
+5. Check If <in_OrchestratorQueueName> is Null or WhiteSpace
+		5.1 Assign Config("OrchestratorQueueName") = <in_OrchestratorQueueName>
+
+6. Check If <in_OrchestratorQueueFolder> is Null or WhiteSpace
+		6.1 Assign Config("OrchestratorQueueFolder") = <in_OrchestratorQueueFolder>
+
+7. Invoke "KillAllProcesses"
+		------------ START KillAllProcesses
+			1. Kill Process = "msedge" (or "chrome" in case using Chrome.exe)
+		------------ END KillAllProcesses
+
+8. Sequence "Extract Work Item"
+		------------ START Extract Work Item
+			** REFramework set <dt_TransactionData> = Null (Type: Data table) //Default
+			1. Invoke "System1_Login"
+				------------ START System1_Login
+					Arguments IN :
+						1. System1_URL = Config("System1_URL").ToString
+						2. System1_Credential = Config("System1_Credential").Tostring
+					Process :
+						1. Set variable name <username> and <password> = Null
+						2. Invoke "GetAppCredential"
+							------------ START GetAppCredential
+								Arguments IN :
+									1. in_Credential = <System1_Credential>
+								Process :
+									1. Get credential
+										- Credential name = <in_Credential>
+										- Save username as = <out_Username>
+										- Save password as = <out_Password>
+								Arguments OUT :
+									1. out_Username = <username>
+									2. out_Password = <password>
+							------------ END GetAppCredential
+						3. Open browser = <System1_URL>
+							------------ START Open browser
+								3.1 Type <username> and <password> Then click Login
+							------------ END Open browser
+				------------ END System1_Login
+			2. Invoke "System1_NavigateToWorkItems"
+				------------ START System1_NavigateToWorkItems
+					Process :
+						1. Click button "Work Items"
+				------------ END System1_NavigateToWorkItems
+			3. Invoke "System1_ExtractWorkItems"
+				------------ START System1_ExtractWorkItems
+					Process :
+						1. Extract datatable and set output = <dt_WorkItems> (Type: Data table)
+					Arguments OUT :
+						1. dt_WorkItems = <dt_TransactionData> (Type: Data table)
+				------------ END System1_ExtractWorkItems
+			4. Invoke "System1_Close"
+				------------ START System1_Close
+					Process :
+						1. Click button "Log Out"
+						2. Close Tab
+				------------ END System1_Close
+			5. Set <WIList> (Type: DataRow[] ก็คือ Datatable นั่นแหละ) = Null
+				5.1 Assign <WIList> = <dt_TransactionData.Select("Type='WI5' AND Status='Open'")>
+
+			** REFramework set <MaxConsecutiveSystemExceptions> = Null (Type: Int32) //Default
+			6. Check If Config("MaxConsecutiveSystemExceptions") > 0 AndAlso <MaxConsecutiveSystemExceptions> >= Config("MaxConsecutiveSystemExceptions")
+				6.1 Then Throw Exception !!
+
+			7. Invoke "InitAllApplications"
+				------------ START InitAllAplications
+					Arguments IN :
+						1. in_Config = <Config>
+					Process :
+						1. Invoke "System1_Login"
+							------------ START System1_Login
+								Arguments IN :
+									1. System1_URL = Config("System1_URL").ToString
+									2. System1_Credential = Config("System1_Credential").Tostring
+								Process :
+									1. Set variable name <username> and <password> = Null
+									2. Invoke "GetAppCredential"
+										------------ START GetAppCredential
+											Arguments IN :
+												1. in_Credential = <System1_Credential>
+											Process :
+												1. Get credential
+													- Credential name = <in_Credential>
+													- Save username as = <out_Username>
+													- Save password as = <out_Password>
+											Arguments OUT :
+												1. out_Username = <username>
+												2. out_Password = <password>
+										------------ END GetAppCredential
+									3. Open browser = <System1_URL>
+										------------ START Open browser
+											3.1 Type <username> and <password> Then click Login
+										------------ END Open browser
+							------------ END System1_Login
+						2. Invoke "SHA1_Open"
+							------------ START SHA1_Open
+								Arguments IN :
+									1. SHA1_URL = in_Config("SHA1Online_URL")
+								Process :
+									1. Open browser = SHA1_URL
+									2. Maximize windows
+							------------ END SHA1_Open
+				------------ END InitAllAplications
+		------------ END Extract Work Item
+****************  END Initialization
+
+
+
+
+
+^^ Incase Transitions "Successful" from Initialization
+^^ Condition : <SystemException> is Nothing
+****************  START Get Transaction Data
+	** REFramework set
+		<TransactionItem> = Null (Type: DataRow)
+		<TransactionNumber> = 1 (Type: Int32) //This tutorial change 1 to be 0
+		<TransactionItem> = Null (Type: DataRow)
+		<TransactionField1> = Null (Type: String)
+		<TransactionField2> = Null (Type: String)
+		<TransactionID> = Null (Type: String)
+
+	1. Check Stop Signal and set output as "ShouldStop" (Type: Boolean)
+		Then: Log message and set <TransactionItem> = Nothing
+		Else:
+			1. Invoke GetTransactionData
+				------------ START GetTransactionData
+					Arguments IN :
+						1. in_TransactionNumber (Type: Int32) = <TransactionNumber>
+						2. in_Config (Type: Dict) = <Config>
+						3. io_dt_TransactionData (Type: DataTable) = <dt_TransactionData>
+						4. in_WIList (Type: DataRow[]) = <WIList>
+					Process:
+						1. Get Transaction Item (In This tutorial processes without Queue !!!!)
+							- Queue Name = in_Config("OrchestratorQueueName")
+							- Folder Path = in_Config("OrchestratorQueueFolder")
+							- Set output as <out_TransactionItem>
+						2. Check If <in_TransactionNumber> less than <in_WIList.Count>  //Original with Queue is <out_TransactionItem isNot Nothing> !!!!
+							Then :
+								1. Assign <out_TransactionItem> = <in_WIList(in_TransactionNumber)> //Filter DataRow[] by Index start from 0 and send arg out to DataRow
+								2. Assign <out_TransactionID> = <out_TransactionItem("WIID")>
+							Else :
+								1. Assign <out_TransactionItem> = Nothing
+					Arguments OUT :
+						1. out_TransactionItem (Type: DataRow) = <TransactionItem>
+						2. out_TransactionField1 (Type: String) = <TransactionField1>
+						3. out_TransactionField2 (Type: String) = <TransactionField2>
+						4. out_TransactionID (Type: String) = <TransactionID>
+						5. io_dt_TransactionData (Type: DataTable) = <dt_TransactionData>
+				------------ END GetTransactionData
+****************  END Get Transaction Data
+
+
+
+
+^^ Incase Transitions "New Transaction" from Get Transaction data
+^^ Condition : <TransactionItem> isNot Nothing
+****************  START Process Transaction
+	** REFramework set var :
+		BusinessException = Nothing
+	
+	1. Invoke Process :
+		------------ START Process
+			Arguments IN :
+				1. in_TransactionItem (Type: DataRow) = <TransactionItem>
+				2. in_Config (Type: Dict) = <Config>
+				3. WIID (Type: Int32) = <Convert.ToInt32(TransactionID)>
+			Process :
+				1. Invoke System1_NavigateTo_WIDetails
+					------------ START System1_NavigateTo_WIDetails
+						Arguments IN :
+							1. WIID (Type: Int32) = <WIID>
+							2. System1_URL (Type: String) = <in_Config("System1_URL")>
+						Process :
+							1. Navigate to <System1_URL> + "work-items/" + <WIID>
+					------------ END System1_NavigateTo_WIDetails
+				2. Invoke System1_ExtractClientInformation
+					------------ START System1_ExtractClientInformation
+						Process :
+							1. Get text and extract text to be <ClientID>, <ClientName> and <ClientCountry>
+						Arguments OUT :
+							1. ClientID (Type: String) = <ClientID>
+							2. ClientName (Type: String) = <ClientName>
+							3. ClientCountry (Type: String) = <ClientCountry>
+					------------ END System1_ExtractClientInformation
+				3. Invoke SHA1Online_GetHashCode
+					------------ START SHA1Online_GetHashCode
+						Arguments IN :
+							1. clientInformation (Type: String) = <ClientID> + <ClientName> + <ClientCountry>
+						Process :
+							1. Type <clientInformation> into SHA1Online.com and get hash result to <hashResult>
+						Arguments OUT :
+							1. hashResult (Type: String) = <hashResult>
+					------------ END SHA1Online_GetHashCode
+				4. Invoke System1_UpdateWorkItem
+					------------ START System1_UpdateWorkItem
+						Arguments IN :
+							1. comment (Type: String) = <hashResult>
+							2. status (Type: String) = "Completed"
+						Process :
+							1. Update work item by fill a comment and select status
+					------------ END System1_UpdateWorkItem
+		------------ END Process
+	2. Invoke SetTransactionStatus
+		------------ START SetTransactionStatus
+			Arguments IN/OUT เยอะมากไปไล่ดูเอาเอง
+			Process หลักๆจะทำการ Reset "RetryNumber" และ "ConsecutiveSystem" ให้เป็น 0 ถ้า BusinessException หรือ SystemException is Nothing
+			และจะบวก 1 ให้กับ TransactionNumberด้วย
+		------------ END SetTransactionStatus
+****************  END Process Transaction
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
